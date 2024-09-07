@@ -43,11 +43,11 @@ def connect_mqtt():
     return client
 
 async def publish(client, mazda, vehicle_id):
-    topic = f"mazda/{vehicle_id}"
+    topic = f"mazda/{vehicle_id}/monitor"
     while True:
         status = await mazda.get_vehicle_status(vehicle_id)
         print(status)
-        result = client.publish(topic, json.dumps(status))
+        result = client.publish(topic, json.dumps(status), retain=False)
         # result: [0, 1]
         if result[0] != 0:
             print(f"Failed to send message to topic {topic}")
@@ -70,6 +70,39 @@ async def main():
 
     client = connect_mqtt()
     client.loop_start()
+
+    dev_id = f"mazda-{vehicle_id}"
+
+    sensors = [
+        {"name":"fuelRemainingPercent", "class":"None", "units":"%"},
+        {"name":"fuelDistanceRemainingKm", "class":"None", "units":"km"},
+        {"name":"odometerKm", "class":"None", "units":"km"},
+    ]
+
+    for s in sensors:
+        discovery = {
+            "name":s["name"],
+            "uniq_id":f"{dev_id}-{s['name']}",
+#            "dev_cla":s["class"],
+            "unit_of_measurement":s["units"],
+            "~": f"mazda/{vehicle_id}",
+            "stat_t": "~/monitor",
+            "val_tpl": "{{ value_json."+s['name']+" }}",
+            "object_id": f"mazda-{s['name']}",
+            "avty_t": "~/status",
+            "pl_avail": "online",
+            "pl_not_avail": "offline",
+            "dev": {
+                "identifiers": [dev_id],
+                "manufacturer": "MAZDA",
+                "model": vehicles[0]["modelName"],
+                "name": vehicles[0]["nickname"]
+            }
+        }
+        client.publish(f"homeassistant/sensor/{dev_id}/{s['name']}/config", json.dumps(discovery), retain=True)
+
+    client.publish(f"mazda/{vehicle_id}/status", "online", retain=False)
+
     await publish(client, mazda, vehicle_id)
     client.loop_stop()
 
