@@ -42,24 +42,17 @@ def connect_mqtt():
     client.connect(broker, port)
     return client
 
-async def publish(client, mazda):
-    msg_count = 1
-    vehicle_id = os.getenv("MAZDA_ID")
+async def publish(client, mazda, vehicle_id):
     topic = f"mazda/{vehicle_id}"
     while True:
         status = await mazda.get_vehicle_status(vehicle_id)
         print(status)
-        msg = status
-        result = client.publish(topic, json.dumps(msg))
+        result = client.publish(topic, json.dumps(status))
         # result: [0, 1]
-        if result[0] == 0:
-            print(f"Send `{msg}` to topic `{topic}`")
-        else:
+        if result[0] != 0:
             print(f"Failed to send message to topic {topic}")
-        msg_count += 1
-        if msg_count > 5:
-            break
-        time.sleep(300)
+
+        time.sleep(300) # 5 minutes
 
 
 async def main():
@@ -67,11 +60,17 @@ async def main():
     username = os.getenv("MAZDA_USERNAME")
     password = os.getenv("MAZDA_PASSWORD")
     region = "MNAO"
+    vehicle_id = None # os.getenv("MAZDA_ID")
+
     mazda = MazdaAPI(username, password, region)
+
+    if vehicle_id is None:
+        vehicles = await mazda.get_vehicles()
+        vehicle_id = vehicles[0]["id"]
 
     client = connect_mqtt()
     client.loop_start()
-    await publish(client, mazda)
+    await publish(client, mazda, vehicle_id)
     client.loop_stop()
 
     # Close the session
