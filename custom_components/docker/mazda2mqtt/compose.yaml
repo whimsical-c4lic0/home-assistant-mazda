@@ -1,0 +1,5 @@
+services:
+  mazda2mqtt:
+    image: mazda2mqtt:latest
+    build: .
+    env_file: .env
