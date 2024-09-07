@@ -52,7 +52,7 @@ async def publish(client, mazda, vehicle_id):
         if result[0] != 0:
             print(f"Failed to send message to topic {topic}")
 
-        time.sleep(300) # 5 minutes
+        time.sleep(600) # 10 minutes
 
 
 async def main():
@@ -74,9 +74,13 @@ async def main():
     dev_id = f"mazda-{vehicle_id}"
 
     sensors = [
-        {"name":"fuelRemainingPercent", "class":"None", "units":"%"},
-        {"name":"fuelDistanceRemainingKm", "class":"None", "units":"km"},
-        {"name":"odometerKm", "class":"None", "units":"km"},
+        {"name":"fuelRemaining", "class":None, "units":"%", "tpl": "fuelRemainingPercent"},
+        {"name":"fuelDistanceRemaining", "class":"distance", "units":"km", "tpl": "fuelDistanceRemainingKm"},
+        {"name":"odometer", "class":"distance", "units":"km", "tpl": "odometerKm"},
+        {"name":"frontLeftTirePressure", "class":"pressure", "units":"psi", "tpl": "tirePressure.frontLeftTirePressurePsi"},
+        {"name":"frontRightTirePressure", "class":"pressure", "units":"psi", "tpl": "tirePressure.frontRightTirePressurePsi"},
+        {"name":"rearLeftTirePressure", "class":"pressure", "units":"psi", "tpl": "tirePressure.rearLeftTirePressurePsi"},
+        {"name":"rearRightTirePressure", "class":"pressure", "units":"psi", "tpl": "tirePressure.rearRightTirePressurePsi"},
     ]
 
     for s in sensors:
@@ -87,7 +91,7 @@ async def main():
             "unit_of_measurement":s["units"],
             "~": f"mazda/{vehicle_id}",
             "stat_t": "~/monitor",
-            "val_tpl": "{{ value_json."+s['name']+" }}",
+            "val_tpl": "{{ value_json."+s.get('tpl', 'name')+" }}",
             "object_id": f"mazda-{s['name']}",
             "avty_t": "~/status",
             "pl_avail": "online",
@@ -99,6 +103,8 @@ async def main():
                 "name": vehicles[0]["nickname"]
             }
         }
+        if s["class"] is not None: # only add dev_cla if not None, other discovery won't work
+            discovery["dev_cla"] = s["class"]
         client.publish(f"homeassistant/sensor/{dev_id}/{s['name']}/config", json.dumps(discovery), retain=True)
 
     client.publish(f"mazda/{vehicle_id}/status", "online", retain=False)
