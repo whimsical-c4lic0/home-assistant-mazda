@@ -6,10 +6,10 @@ RUN apt-get update && apt-get install -y wget unzip python3 python3-venv && \
   python3 -m venv venv && \
   ./venv/bin/python3 -m pip install aiohttp paho-mqtt cryptography python-dotenv
 
-RUN wget https://github.com/brunob45/home-assistant-mazda/archive/refs/heads/mqtt.zip && \
-  unzip mqtt.zip && rm -rf mqtt.zip
+RUN wget https://github.com/runDMCA/home-assistant-mazda/archive/refs/heads/main.zip && \
+  unzip main.zip && rm -rf main.zip
 
-# COPY .env /app/.env
+COPY app.py /app/home-assistant-mazda-main/custom_components/mazda/app.py
 
 SHELL ["/bin/ash", "-c"]
-CMD ["./venv/bin/python3", "./home-assistant-mazda-mqtt/custom_components/mazda/app.py"]
+CMD ["./venv/bin/python3", "./home-assistant-mazda-main/custom_components/mazda/app.py"]
