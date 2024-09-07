@@ -1,9 +1,11 @@
 from dotenv import load_dotenv
 import os
 
-from paho.mqtt import client as mqtt_client
+# from paho.mqtt import client as mqtt_client
 import time
 import json
+
+from ha_mqtt_discoverable import Settings, sensors, DeviceInfo
 
 import aiohttp
 import asyncio
@@ -68,10 +70,29 @@ async def main():
         vehicles = await mazda.get_vehicles()
         vehicle_id = vehicles[0]["id"]
 
-    client = connect_mqtt()
-    client.loop_start()
-    await publish(client, mazda, vehicle_id)
-    client.loop_stop()
+    mqtt_settings = Settings.MQTT(host=os.getenv("MQTT_BROKER"))
+
+    sensor_list = [
+        {"name":"fuelRemainingPercent", "class":"None", "units":"%"},
+    ]
+
+    device_info = DeviceInfo(name=vehicles[0]["nickname"], identifiers=f"mazda{vehicle_id}")
+
+    for s in sensor_list:
+        sensor_info = sensors.SensorInfo(name=s["name"], device_class=s["class"], unit_of_measurement=s["units"], unique_id=f"mazda{vehicle_id}-{s['name']}", device=device_info)
+        settings = Settings(mqtt=mqtt_settings, entity=sensor_info)
+        mysensor = sensors.Sensor(settings)
+
+    while True:
+        status = await mazda.get_vehicle_status(vehicle_id)
+        print(status)
+        mysensor.set_state(status.get("fuelRemainingPercent", 0))
+        time.sleep(300) # 5 minutes
+
+#    client = connect_mqtt()
+#    client.loop_start()
+#    await publish(client, mazda, vehicle_id)
+#    client.loop_stop()
 
     # Close the session
     await mazda.close()
