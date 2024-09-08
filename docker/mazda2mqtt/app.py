@@ -74,20 +74,20 @@ async def main():
     dev_id = f"mazda-{vehicle_id}"
 
     sensors = [
-        {"name":"fuelRemaining", "class":None, "units":"%", "tpl": "fuelRemainingPercent"},
-        {"name":"fuelDistanceRemaining", "class":"distance", "units":"km", "tpl": "fuelDistanceRemainingKm"},
-        {"name":"odometer", "class":"distance", "units":"km", "tpl": "odometerKm"},
-        {"name":"frontLeftTirePressure", "class":"pressure", "units":"psi", "tpl": "tirePressure.frontLeftTirePressurePsi"},
-        {"name":"frontRightTirePressure", "class":"pressure", "units":"psi", "tpl": "tirePressure.frontRightTirePressurePsi"},
-        {"name":"rearLeftTirePressure", "class":"pressure", "units":"psi", "tpl": "tirePressure.rearLeftTirePressurePsi"},
-        {"name":"rearRightTirePressure", "class":"pressure", "units":"psi", "tpl": "tirePressure.rearRightTirePressurePsi"},
+        {"name":"fuelRemaining", "dev_cla":None, "units":"%", "tpl": "fuelRemainingPercent", "sclass": "measurement"},
+        {"name":"fuelDistanceRemaining", "dev_cla":"distance", "units":"km", "tpl": "fuelDistanceRemainingKm", "sclass": "measurement"},
+        {"name":"odometer", "dev_cla":"distance", "units":"km", "tpl": "odometerKm", "sclass": "total"},
+        {"name":"frontLeftTirePressure", "dev_cla":"pressure", "units":"psi", "tpl": "tirePressure.frontLeftTirePressurePsi", "sclass": "measurement"},
+        {"name":"frontRightTirePressure", "dev_cla":"pressure", "units":"psi", "tpl": "tirePressure.frontRightTirePressurePsi", "sclass": "measurement"},
+        {"name":"rearLeftTirePressure", "dev_cla":"pressure", "units":"psi", "tpl": "tirePressure.rearLeftTirePressurePsi", "sclass": "measurement"},
+        {"name":"rearRightTirePressure", "dev_cla":"pressure", "units":"psi", "tpl": "tirePressure.rearRightTirePressurePsi", "sclass": "measurement"},
     ]
 
     for s in sensors:
         discovery = {
             "name":s["name"],
             "uniq_id":f"{dev_id}-{s['name']}",
-#            "dev_cla":s["class"],
+#            "dev_cla":s["dev_cla"],
             "unit_of_measurement":s["units"],
             "~": f"mazda/{vehicle_id}",
             "stat_t": "~/monitor",
@@ -96,6 +96,7 @@ async def main():
             "avty_t": "~/status",
             "pl_avail": "online",
             "pl_not_avail": "offline",
+            "state_class": s["sclass"],
             "dev": {
                 "identifiers": [dev_id],
                 "manufacturer": "MAZDA",
@@ -103,8 +104,8 @@ async def main():
                 "name": vehicles[0]["nickname"]
             }
         }
-        if s["class"] is not None: # only add dev_cla if not None, other discovery won't work
-            discovery["dev_cla"] = s["class"]
+        if s["dev_cla"] is not None: # only add dev_cla if not None, other discovery won't work
+            discovery["dev_cla"] = s["dev_cla"]
         client.publish(f"homeassistant/sensor/{dev_id}/{s['name']}/config", json.dumps(discovery), retain=True)
 
     client.publish(f"mazda/{vehicle_id}/status", "online", retain=False)
