@@ -151,7 +151,7 @@ async def main():
         }
         if (
             s["dev_cla"] is not None
-        ):  # only add dev_cla if not None, other discovery won't work
+        ):  # only add dev_cla if not None, otherwise discovery won't work
             discovery["dev_cla"] = s["dev_cla"]
         client.publish(
             f"homeassistant/sensor/{dev_id}/{s['name']}/config",
