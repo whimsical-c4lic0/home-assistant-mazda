@@ -48,14 +48,12 @@ def connect_mqtt():
 
 
 async def publish(client, mazda, vehicle_id):
-    topic = f"mazda/{vehicle_id}/monitor"
+    topic = f"mazda/{vehicle_id}"
     while True:
         status = await mazda.get_vehicle_status(vehicle_id)
         print(status)
-        result = client.publish(topic, json.dumps(status), retain=False)
-        # result: [0, 1]
-        if result[0] != 0:
-            print(f"Failed to send message to topic {topic}")
+        client.publish(f"{topic}/monitor", json.dumps(status), retain=True)
+        client.publish(f"{topic}/status", "online", retain=True)
 
         time.sleep(600)  # 10 minutes
 
@@ -160,8 +158,6 @@ async def main():
             json.dumps(discovery),
             retain=True,
         )
-
-    client.publish(f"mazda/{vehicle_id}/status", "online", retain=False)
 
     await publish(client, mazda, vehicle_id)
     client.loop_stop()
