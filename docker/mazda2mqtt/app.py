@@ -159,6 +159,28 @@ async def main():
             retain=True,
         )
 
+    discovery = {
+        "name": "tracker",
+        "uniq_id": f"{dev_id}-tracker",
+        "~": f"mazda/{vehicle_id}",
+        "json_attributes_topic": "~/monitor",
+        "object_id": f"mazda-tracker",
+        "avty_t": "~/status",
+        "pl_avail": "online",
+        "pl_not_avail": "offline",
+        "dev": {
+            "identifiers": [dev_id],
+            "manufacturer": "MAZDA",
+            "model": vehicles[0]["modelName"],
+            "name": vehicles[0]["nickname"],
+        },
+    }
+    client.publish(
+        f"homeassistant/device_tracker/{dev_id}/config",
+        json.dumps(discovery),
+        retain=True,
+    )
+
     await publish(client, mazda, vehicle_id)
     client.loop_stop()
 
