@@ -75,6 +75,13 @@ async def main():
     client.loop_start()
 
     dev_id = f"mazda-{vehicle_id}"
+    dev_desc = {
+        "identifiers": [dev_id],
+        "manufacturer": "MAZDA",
+        "model": vehicles[0]["modelName"],
+        "name": vehicles[0]["nickname"],
+        "serial_number": vehicles[0]["vin"],
+    }
 
     sensors = [
         {
@@ -126,7 +133,9 @@ async def main():
             "units": "psi",
             "tpl": "tirePressure.rearRightTirePressurePsi",
             "sclass": "measurement",
-        },
+        }
+    ]
+    binary_sensors = [
         # doors
         {"name": "driverDoorOpen", "dev_cla": "door", "tpl": "doors.driverDoorOpen"},
         {
@@ -210,33 +219,38 @@ async def main():
             "avty_t": "~/status",
             "pl_avail": "online",
             "pl_not_avail": "offline",
-            # "state_class": s["sclass"],
-            "dev": {
-                "identifiers": [dev_id],
-                "manufacturer": "MAZDA",
-                "model": vehicles[0]["modelName"],
-                "name": vehicles[0]["nickname"],
-            },
+            "state_class": s["sclass"],
+            "dev": dev_desc,
         }
 
-        if s.get("sclass", None) is not None:
-            discovery["state_class"] = s["sclass"]
+        client.publish(
+            f"homeassistant/sensor/{dev_id}/{s['name']}/config",
+            json.dumps(discovery),
+            retain=True,
+        )
 
-            client.publish(
-                f"homeassistant/sensor/{dev_id}/{s['name']}/config",
-                json.dumps(discovery),
-                retain=True,
-            )
+    for s in binary_sensors:
+        discovery = {
+            "name": s["name"],
+            "uniq_id": f"{dev_id}-{s['name']}",
+            "dev_cla": s.get("dev_cla", None),
+            "~": f"mazda/{vehicle_id}",
+            "stat_t": "~/monitor",
+            "val_tpl": "{{ value_json." + s.get("tpl", "name") + " }}",
+            "object_id": f"mazda-{s['name']}",
+            "avty_t": "~/status",
+            "pl_avail": "online",
+            "pl_not_avail": "offline",
+            "payload_off": False,
+            "payload_on": True,
+            "dev": dev_desc,
+        }
 
-        else:
-            discovery["payload_off"] = False
-            discovery["payload_on"] = True
-
-            client.publish(
-                f"homeassistant/binary_sensor/{dev_id}/{s['name']}/config",
-                json.dumps(discovery),
-                retain=True,
-            )
+        client.publish(
+            f"homeassistant/binary_sensor/{dev_id}/{s['name']}/config",
+            json.dumps(discovery),
+            retain=True,
+        )
 
     discovery = {
         "name": "tracker",
@@ -247,13 +261,9 @@ async def main():
         "avty_t": "~/status",
         "pl_avail": "online",
         "pl_not_avail": "offline",
-        "dev": {
-            "identifiers": [dev_id],
-            "manufacturer": "MAZDA",
-            "model": vehicles[0]["modelName"],
-            "name": vehicles[0]["nickname"],
-        },
+        "dev": dev_desc
     }
+
     client.publish(
         f"homeassistant/device_tracker/{dev_id}/config",
         json.dumps(discovery),
