@@ -98,6 +98,7 @@ async def main():
             "tpl": "odometerKm",
             "sclass": "total",
         },
+        # tires
         {
             "name": "frontLeftTirePressure",
             "dev_cla": "pressure",
@@ -126,14 +127,82 @@ async def main():
             "tpl": "tirePressure.rearRightTirePressurePsi",
             "sclass": "measurement",
         },
+        # doors
+        {"name": "driverDoorOpen", "dev_cla": "door", "tpl": "doors.driverDoorOpen"},
+        {
+            "name": "passengerDoorOpen",
+            "dev_cla": "door",
+            "tpl": "doors.passengerDoorOpen",
+        },
+        {
+            "name": "rearLeftDoorOpen",
+            "dev_cla": "door",
+            "tpl": "doors.rearLeftDoorOpen",
+        },
+        {
+            "name": "rearRightDoorOpen",
+            "dev_cla": "door",
+            "tpl": "doors.rearRightDoorOpen",
+        },
+        {"name": "trunkOpen", "dev_cla": "door", "tpl": "doors.trunkOpen"},
+        {"name": "hoodOpen", "dev_cla": "door", "tpl": "doors.hoodOpen"},
+        {"name": "fuelLidOpen", "dev_cla": "door", "tpl": "doors.fuelLidOpen"},
+        # doorLocks
+        {
+            "name": "driverDoorUnlocked",
+            "dev_cla": "lock",
+            "tpl": "doorLocks.driverDoorUnlocked",
+        },
+        {
+            "name": "passengerDoorUnlocked",
+            "dev_cla": "lock",
+            "tpl": "doorLocks.passengerDoorUnlocked",
+        },
+        {
+            "name": "rearLeftDoorUnlocked",
+            "dev_cla": "lock",
+            "tpl": "doorLocks.rearLeftDoorUnlocked",
+        },
+        {
+            "name": "rearRightDoorUnlocked",
+            "dev_cla": "lock",
+            "tpl": "doorLocks.rearRightDoorUnlocked",
+        },
+        # windows
+        {
+            "name": "driverWindowOpen",
+            "dev_cla": "window",
+            "tpl": "windows.driverWindowOpen",
+        },
+        {
+            "name": "passengerWindowOpen",
+            "dev_cla": "window",
+            "tpl": "windows.passengerWindowOpen",
+        },
+        {
+            "name": "rearLeftWindowOpen",
+            "dev_cla": "window",
+            "tpl": "windows.rearLeftWindowOpen",
+        },
+        {
+            "name": "rearRightWindowOpen",
+            "dev_cla": "window",
+            "tpl": "windows.rearRightWindowOpen",
+        },
+        # hazardLightsOn
+        {
+            "name": "hazardLightsOn",
+            "dev_cla": "light",
+            "tpl": "hazardLightsOn",
+        },
     ]
 
     for s in sensors:
         discovery = {
             "name": s["name"],
             "uniq_id": f"{dev_id}-{s['name']}",
-            #            "dev_cla":s["dev_cla"],
-            "unit_of_measurement": s["units"],
+            "dev_cla": s.get("dev_cla", None),
+            "unit_of_measurement": s.get("units", None),
             "~": f"mazda/{vehicle_id}",
             "stat_t": "~/monitor",
             "val_tpl": "{{ value_json." + s.get("tpl", "name") + " }}",
@@ -141,7 +210,7 @@ async def main():
             "avty_t": "~/status",
             "pl_avail": "online",
             "pl_not_avail": "offline",
-            "state_class": s["sclass"],
+            # "state_class": s["sclass"],
             "dev": {
                 "identifiers": [dev_id],
                 "manufacturer": "MAZDA",
@@ -149,15 +218,25 @@ async def main():
                 "name": vehicles[0]["nickname"],
             },
         }
-        if (
-            s["dev_cla"] is not None
-        ):  # only add dev_cla if not None, otherwise discovery won't work
-            discovery["dev_cla"] = s["dev_cla"]
-        client.publish(
-            f"homeassistant/sensor/{dev_id}/{s['name']}/config",
-            json.dumps(discovery),
-            retain=True,
-        )
+
+        if s.get("sclass", None) is not None:
+            discovery["state_class"] = s["sclass"]
+
+            client.publish(
+                f"homeassistant/sensor/{dev_id}/{s['name']}/config",
+                json.dumps(discovery),
+                retain=True,
+            )
+
+        else:
+            discovery["payload_off"] = False
+            discovery["payload_on"] = True
+
+            client.publish(
+                f"homeassistant/binary_sensor/{dev_id}/{s['name']}/config",
+                json.dumps(discovery),
+                retain=True,
+            )
 
     discovery = {
         "name": "tracker",
