@@ -22,7 +22,10 @@ load_dotenv()
 
 # https://www.emqx.com/en/blog/how-to-use-mqtt-in-python
 broker = os.getenv("MQTT_BROKER")
-port = os.getenv("MQTT_PORT") or 1883
+if os.getenv("MQTT_PORT"):
+    port = int(os.getenv("MQTT_PORT"))
+else:
+    port = 1883
 mqtt_username = os.getenv("MQTT_USERNAME")
 mqtt_password = os.getenv("MQTT_PASSWORD")
 
