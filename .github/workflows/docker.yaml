@@ -32,6 +32,6 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: docker/mazda2mqtt
           push: true
           tags: ghcr.io/${{ github.actor }}/ha-mazda-bridge:latest
