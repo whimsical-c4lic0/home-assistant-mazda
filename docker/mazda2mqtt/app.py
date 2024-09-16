@@ -22,11 +22,12 @@ load_dotenv()
 
 # https://www.emqx.com/en/blog/how-to-use-mqtt-in-python
 broker = os.getenv("MQTT_BROKER")
-port = 1883
+port = os.getenv("MQTT_PORT") or 1883
+mqtt_username = 'os.getenv("MQTT_USERNAME")
+mqtt_password = os.getenv("MQTT_PASSWORD")
+
 # Generate a Client ID with the publish prefix.
 client_id = f"publish-mazda"
-# username = 'emqx'
-# password = 'public'
 
 
 def connect_mqtt():
@@ -41,7 +42,10 @@ def connect_mqtt():
         client_id=client_id,
         callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2,
     )
-    # client.username_pw_set(username, password)
+
+    if mqtt_username and mqtt_password:
+        client.username_pw_set(mqtt_username, mqtt_password)
+
     client.on_connect = on_connect
     client.connect(broker, port)
     return client
@@ -62,8 +66,12 @@ async def main():
     # https://github.com/alanzchen/mymazda-relay/blob/main/app.py#L14
     username = os.getenv("MAZDA_USERNAME")
     password = os.getenv("MAZDA_PASSWORD")
-    region = "MNAO"
-    vehicle_id = None  # os.getenv("MAZDA_ID")
+    region = os.getenv("MAZDA_REGION") or "MNAO"
+    vehicle_id = os.getenv("MAZDA_ID")  # Default: None
+
+    if not username or not password:
+        print("MAZDA_USERNAME and MAZDA_PASSWORD are required!")
+        exit(1)
 
     mazda = MazdaAPI(username, password, region)
 
